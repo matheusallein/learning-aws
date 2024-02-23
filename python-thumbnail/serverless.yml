@@ -1,0 +1,120 @@
+service: python-thumbnail
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-east-1
+  profile: serverless-admin
+  stage: dev
+  timeout: 10
+  memorySize: 128
+  environment:
+    THUMBNAIL_SIZE: 128
+    REGION_NAME: ${self:provider.region}
+    DYNAMODB_TABLE: ${self:custom.dynamoTableName}
+
+  iam: 
+    role: 
+      statements: 
+        - Effect: "Allow"
+          Action:
+            - "s3:*"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:custom.dynamoTableName}" 
+
+custom:
+  bucketName: python-thumbnail-bucket
+  dynamoTableName: python-thumbnail-table
+  pythonRequirements:
+    dockerizePip: true
+    slim: true
+    strip: false
+    noDeploy: 
+      - numpy
+      - scipy
+      - pandas
+      - scikit-learn
+      - matplotlib
+      - seaborn
+      - jupyter
+      - notebook
+      - ipykernel
+      - ipywidgets
+      - jupyterlab
+      - jupyterlab-server
+      - jupyterlab-widgets
+      - jupyter-server-proxy
+      - jupyter-server
+      - jupyter-client
+      - jupyter-console
+      - jupyter-core
+
+functions:
+  s3_thumbnail_generator:
+    handler: handler.s3_thumbnail_generator
+    layers:
+      - arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p39-pillow:1
+    events:
+      - s3:
+          bucket: ${self:custom.bucketName}
+          event: s3:ObjectCreated:*
+          rules:
+            - suffix: .png
+  list_thumbnails:
+    handler: handler.list_thumbnails
+    layers:
+      - arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p39-pillow:1
+    events:
+      - http:
+          path: /thumbnails
+          cors: true
+          method: get
+  get_thumbnail:
+    handler: handler.get_thumbnail
+    layers:
+      - arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p39-pillow:1
+    events:
+      - http:
+          path: /thumbnails/{id}
+          cors: true
+          method: get
+  delete_thumbnail:
+    handler: handler.delete_thumbnail
+    layers:
+      - arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p39-pillow:1
+    events:
+      - http:
+          path: /thumbnails/{id}
+          cors: true
+          method: delete
+          authorizer: aws_iam
+
+
+resources:
+  Resources:
+    ThumbnailTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.dynamoTableName}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+plugins:
+  - serverless-python-requirements
