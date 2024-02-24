@@ -1,0 +1,86 @@
+service: serverless-node-todo-api
+frameworkVersion: "3"
+configValidationMode: error
+
+custom:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude: ["aws-sdk"]
+    target: "node18"
+    platform: "node"
+    concurrency: 10
+  tableName: "todo-table-${sls:stage}"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - Fn::GetAtt: [UsersTable, Arn]
+  environment:
+    TODO_TABLE: ${self:custom.tableName}
+
+functions:
+  create:
+    handler: src/create.handler
+    events:
+      - http:
+          path: todo
+          method: post
+          cors: true
+  delete:
+    handler: src/delete.handler
+    events:
+      - http:
+          path: todo/{id}
+          method: delete
+          cors: true
+  update:
+    handler: src/update.handler
+    events:
+      - http:
+          path: todo/{id}
+          method: put
+          cors: true
+  list:
+    handler: src/list.handler
+    events:
+      - http:
+          path: todo
+          method: get
+          cors: true
+  get:
+    handler: src/get.handler
+    events:
+      - http:
+          path: todo/{id}
+          method: get
+          cors: true
+
+resources:
+  Resources:
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:custom.tableName}
+plugins:
+  - serverless-esbuild

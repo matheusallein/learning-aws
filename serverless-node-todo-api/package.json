@@ -1,0 +1,19 @@
+{
+  "name": "serverless-node-todo-api",
+  "version": "1.0.0",
+  "description": "Todo API built with Node.js and Serverless Framework",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.521.0",
+    "@aws-sdk/lib-dynamodb": "^3.521.0",
+    "aws-lambda": "^1.0.7",
+    "express": "^4.18.2",
+    "serverless-http": "^3.1.1",
+    "ts-node": "^10.9.2",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.20",
+    "serverless-esbuild": "^1.51.0",
+    "typescript": "^5.3.3"
+  }
+}
