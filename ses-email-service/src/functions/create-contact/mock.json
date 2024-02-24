@@ -1,0 +1,6 @@
+{
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": "{\"to\": \"hello@world.com\", \"from\": \"world@hello.com\", \"subject\": \"Hello, World!\", \"body\": \"Hello, World!\"}"
+}
